@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "skillupjava"
+        CONTAINER_NAME = "skillupjava-container"
+        GITHUB_REPO = "https://github.com/phadatul/skillupjava.git"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: "${GITHUB_REPO}"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${IMAGE_NAME} ."
+                }
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                script {
+                    sh "docker run -d --name ${CONTAINER_NAME} -p 8080:8080 ${IMAGE_NAME}"
+                }
+            }
+        }
+
+        stage('Cleanup Old Containers') {
+            steps {
+                script {
+                    sh "docker rm -f \$(docker ps -aq --filter name=${CONTAINER_NAME}) || true"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker ps -a"
+        }
+    }
+}
